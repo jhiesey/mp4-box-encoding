@@ -852,13 +852,20 @@ exports.trun.encodingLength = function (box) {
 
 exports.mdat = {}
 exports.mdat.encode = function (box, buf, offset) {
-  exports.mdat.encode.bytes = box.contentLength
+  if (box.buffer) {
+    box.buffer.copy(buf, offset)
+    exports.mdat.encode.bytes = box.buffer.length
+  } else {
+    exports.mdat.encode.bytes = exports.mdat.encodingLength(box)
+  }
 }
-exports.mdat.decode = function (buf, offset) {
-  return null
+exports.mdat.decode = function (buf, start, end) {
+  return {
+    buffer: new Buffer(buf.slice(start, end))
+  }
 }
 exports.mdat.encodingLength = function (box) {
-  return box.contentLength
+  return box.buffer ? box.buffer.length : box.contentLength
 }
 
 function writeReserved (buf, offset, end) {
