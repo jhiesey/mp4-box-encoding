@@ -1,0 +1,24 @@
+{
+  "name": "mp4-box-encoding",
+  "version": "1.0.0",
+  "description": "mp4 box parser/unparser using abstract-encoding",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard"
+  },
+  "keywords": [
+    "mp4",
+    "box",
+    "parse",
+    "unparse"
+  ],
+  "author": "John Hiesey",
+  "license": "MIT",
+  "dependencies": {
+    "uint64be": "^1.0.1"
+  },
+  "devDependencies": {
+    "standard": "^5.4.1",
+    "tape": "^4.4.0"
+  }
+}
