@@ -1,4 +1,4 @@
-var assert = require('assert')
+// var assert = require('assert')
 var uint64be = require('uint64be')
 
 var boxes = require('./boxes')
@@ -84,7 +84,7 @@ Box._encode = function (obj, buffer, offset) {
   }
 
   Box.encode.bytes = ptr - offset
-  assert.equal(ptr - offset, obj.length, 'Error encoding \'' + type + '\': wrote ' + ptr - offset + ' bytes, expecting ' + obj.length)
+  // assert.equal(ptr - offset, obj.length, 'Error encoding \'' + type + '\': wrote ' + ptr - offset + ' bytes, expecting ' + obj.length)
   return buffer
 }
 
