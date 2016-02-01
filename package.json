@@ -1,6 +1,6 @@
 {
   "name": "mp4-box-encoding",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "mp4 box parser/unparser using abstract-encoding",
   "main": "index.js",
   "scripts": {
