@@ -402,7 +402,7 @@ exports.esds.decode = function (buf, offset, end) {
   var esd = (desc.tagName === 'ESDescriptor') ? desc : {}
   var dcd = esd.DecoderConfigDescriptor || {}
   var oti = dcd.oti || 0
-  var dsi = dcd.DecoderSpecificInfo || {}
+  var dsi = dcd.DecoderSpecificInfo
   var audioConfig = dsi ? (dsi.buffer.readUInt8(0) & 0xf8) >> 3 : 0
 
   var mimeCodec = null
