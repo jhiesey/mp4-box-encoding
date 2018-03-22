@@ -1,3 +1,5 @@
+var bufferFrom = require('buffer-from')
+
 var tagToName = {
   0x03: 'ESDescriptor',
   0x04: 'DecoderConfigDescriptor',
@@ -22,7 +24,7 @@ exports.Descriptor.decode = function (buf, start, end) {
     obj = exports[tagName].decode(buf, ptr, end)
   } else {
     obj = {
-      buffer: new Buffer(buf.slice(ptr, ptr + len))
+      buffer: bufferFrom(buf.slice(ptr, ptr + len))
     }
   }
 
