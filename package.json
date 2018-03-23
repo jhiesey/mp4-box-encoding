@@ -15,6 +15,8 @@
   "author": "John Hiesey",
   "license": "MIT",
   "dependencies": {
+    "buffer-alloc": "^1.1.0",
+    "buffer-from": "^1.0.0",
     "uint64be": "^1.0.1"
   },
   "devDependencies": {
