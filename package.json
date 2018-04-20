@@ -3,6 +3,10 @@
   "version": "1.1.3",
   "description": "mp4 box parser/unparser using abstract-encoding",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jhiesey/mp4-box-encoding.git"
+  },
   "scripts": {
     "test": "standard"
   },
