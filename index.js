@@ -23,7 +23,7 @@ var containers = exports.containers = {
   'stbl': ['stsd', 'stts', 'ctts', 'cslg', 'stsc', 'stsz', 'stz2', 'stco', 'co64', 'stss', 'stsh', 'padb', 'stdp', 'sdtp', 'sbgps', 'sgpds', 'subss', 'saizs', 'saios'],
   'mvex': ['mehd', 'trexs', 'leva'],
   'moof': ['mfhd', 'meta', 'trafs'],
-  'traf': ['tfhd', 'trun', 'sbgps', 'sgpds', 'subss', 'saizs', 'saios', 'tfdt', 'meta']
+  'traf': ['tfhd', 'tfdt', 'trun', 'sbgps', 'sgpds', 'subss', 'saizs', 'saios', 'meta']
 }
 
 Box.encode = function (obj, buffer, offset) {
