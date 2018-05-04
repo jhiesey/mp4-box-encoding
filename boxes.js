@@ -783,7 +783,7 @@ exports.mfhd.encode = function (box, buf, offset) {
 }
 exports.mfhd.decode = function (buf, offset) {
   return {
-    sequenceNumber: buf.readUint32BE(0)
+    sequenceNumber: buf.readUInt32BE(0)
   }
 }
 exports.mfhd.encodingLength = function (box) {
