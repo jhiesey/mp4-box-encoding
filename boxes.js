@@ -151,6 +151,19 @@ exports.tkhd.encodingLength = function (box) {
 
 exports.mdhd = {}
 exports.mdhd.encode = function (box, buf, offset) {
+  if (box.version === 1) {
+    buf = buf ? buf.slice(offset) : bufferAlloc(32)
+    writeDate64(box.ctime || new Date(), buf, 0)
+    writeDate64(box.mtime || new Date(), buf, 8)
+    buf.writeUInt32BE(box.timeScale || 0, 16)
+    // Node only supports integer <= 48bit. Waiting for BigInt!
+    buf.writeUIntBE(box.duration || 0, 20, 6)
+    buf.writeUInt16BE(box.language || 0, 28)
+    buf.writeUInt16BE(box.quality || 0, 30)
+    exports.mdhd.encode.bytes = 32
+    return buf
+  }
+
   buf = buf ? buf.slice(offset) : bufferAlloc(20)
   writeDate(box.ctime || new Date(), buf, 0)
   writeDate(box.mtime || new Date(), buf, 4)
@@ -161,8 +174,25 @@ exports.mdhd.encode = function (box, buf, offset) {
   exports.mdhd.encode.bytes = 20
   return buf
 }
-exports.mdhd.decode = function (buf, offset) {
+
+exports.mdhd.decode = function (buf, offset, end) {
   buf = buf.slice(offset)
+
+  var version1 = (end - offset) !== 20
+
+  // In version 1 creation time and modification time are unsigned long
+  if (version1) {
+    return {
+      ctime: readDate64(buf, 0),
+      mtime: readDate64(buf, 8),
+      timeScale: buf.readUInt32BE(16),
+      // Node only supports integer <= 48bit. Waiting for BigInt!
+      duration: buf.readUIntBE(20, 6),
+      language: buf.readUInt16BE(28),
+      quality: buf.readUInt16BE(30)
+    }
+  }
+
   return {
     ctime: readDate(buf, 0),
     mtime: readDate(buf, 4),
@@ -173,6 +203,8 @@ exports.mdhd.decode = function (buf, offset) {
   }
 }
 exports.mdhd.encodingLength = function (box) {
+  if (box.version === 1) return 32
+
   return 20
 }
 
@@ -878,6 +910,11 @@ function writeDate (date, buf, offset) {
   buf.writeUInt32BE(Math.floor((date.getTime() + TIME_OFFSET) / 1000), offset)
 }
 
+function writeDate64 (date, buf, offset) {
+  // Node only supports integer <= 48bit. Waiting for BigInt!
+  buf.writeUIntBE(Math.floor((date.getTime() + TIME_OFFSET) / 1000), offset, 6)
+}
+
 // TODO: think something is wrong here
 function writeFixed32 (num, buf, offset) {
   buf.writeUInt16BE(Math.floor(num) % (256 * 256), offset)
@@ -906,6 +943,11 @@ function readMatrix (buf) {
   var list = new Array(buf.length / 4)
   for (var i = 0; i < list.length; i++) list[i] = readFixed32(buf, i * 4)
   return list
+}
+
+function readDate64 (buf, offset) {
+  // Node only supports integer <= 48bit. Waiting for BigInt!
+  return new Date(buf.readUIntBE(offset, 6) * 1000 - TIME_OFFSET)
 }
 
 function readDate (buf, offset) {
