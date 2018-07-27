@@ -871,7 +871,10 @@ exports.trun.encode = function (box, buf, offset) {
     buf.writeUInt32BE(entry.sampleFlags, ptr)
     ptr += 4
 
-    buf.writeUInt32BE(entry.sampleCompositionTimeOffset, ptr)
+    if (box.version == 0)
+      buf.writeUInt32BE(entry.sampleCompositionTimeOffset, ptr)
+    else
+      buf.writeInt32BE(entry.sampleCompositionTimeOffset, ptr)
     ptr += 4
   }
   exports.trun.encode.bytes = ptr
