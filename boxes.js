@@ -3,6 +3,7 @@ var Box = require('./index')
 var Descriptor = require('./descriptor')
 var bufferAlloc = require('buffer-alloc')
 var bufferFrom = require('buffer-from')
+var uint64be = require('uint64be')
 
 var TIME_OFFSET = 2082844800000
 
@@ -24,6 +25,7 @@ var fullBoxes = [
   'esds',
   'stsz',
   'stco',
+  'co64',
   'stss',
   'stts',
   'ctts',
@@ -524,6 +526,37 @@ exports.stco.decode = function (buf, offset) {
 }
 exports.stco.encodingLength = function (box) {
   return 4 + box.entries.length * 4
+}
+
+exports.co64 = {}
+exports.co64.encode = function (box, buf, offset) {
+  var entries = box.entries || []
+  buf = buf ? buf.slice(offset) : bufferAlloc(exports.co64.encodingLength(box))
+
+  buf.writeUInt32BE(entries.length, 0)
+
+  for (var i = 0; i < entries.length; i++) {
+    uint64be.encode(entries[i], buf, i * 8 + 4)
+  }
+
+  exports.co64.encode.bytes = 4 + entries.length * 8
+  return buf
+}
+exports.co64.decode = function (buf, offset) {
+  buf = buf.slice(offset)
+  var num = buf.readUInt32BE(0)
+  var entries = new Array(num)
+
+  for (var i = 0; i < num; i++) {
+    entries[i] = uint64be.decode(buf, i * 8 + 4)
+  }
+
+  return {
+    entries: entries
+  }
+}
+exports.co64.encodingLength = function (box) {
+  return 4 + box.entries.length * 8
 }
 
 exports.stts = {}
