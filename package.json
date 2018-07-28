@@ -19,12 +19,12 @@
   "author": "John Hiesey",
   "license": "MIT",
   "dependencies": {
-    "buffer-alloc": "^1.1.0",
-    "buffer-from": "^1.0.0",
-    "uint64be": "^1.0.1"
+    "buffer-alloc": "^1.2.0",
+    "buffer-from": "^1.1.0",
+    "uint64be": "^2.0.2"
   },
   "devDependencies": {
-    "standard": "^5.4.1",
-    "tape": "^4.4.0"
+    "standard": "^11.0.1",
+    "tape": "^4.9.1"
   }
 }
