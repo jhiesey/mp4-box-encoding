@@ -846,79 +846,280 @@ exports.mfhd.encode = function (box, buf, offset) {
   exports.mfhd.encode.bytes = 4
   return buf
 }
-exports.mfhd.decode = function (buf, offset) {
+exports.mfhd.decode = function (buf, start, _end, _headers) {
   return {
-    sequenceNumber: buf.readUInt32BE(0)
+    sequenceNumber: buf.readUInt32BE(start)
   }
 }
 exports.mfhd.encodingLength = function (box) {
   return 4
 }
 
+var TFHD_FLAGS_BASE_DATA_OFFSET_PRESENT         = 0x00001
+var TFHD_FLAGS_SAMPLE_DESCRIPTION_INDEX_PRESENT = 0x00002
+var TFHD_FLAGS_DEFAULT_SAMPLE_DURATION_PRESENT  = 0x00008
+var TFHD_FLAGS_DEFAULT_SAMPLE_SIZE_PRESENT      = 0x00010
+var TFHD_FLAGS_DEFAULT_SAMPLE_FLAGS_PRESENT     = 0x00020
+
 exports.tfhd = {}
 exports.tfhd.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(4)
-  buf.writeUInt32BE(box.trackId, 0)
-  exports.tfhd.encode.bytes = 4
+
+  var size = exports.tfhd.encodingLength(box)
+  buf = buf ? buf.slice(offset) : bufferAlloc(size)
+  var flags = box.flags
+
+  var ptr = 0
+  buf.writeUInt32BE(box.trackId, ptr)
+  ptr += 4
+
+  if (flags & TFHD_FLAGS_BASE_DATA_OFFSET_PRESENT) {
+    uint64be.encode(box.baseDataOffsetPresent, buf, ptr)
+    ptr += 8
+  }
+  if (flags & TFHD_FLAGS_SAMPLE_DESCRIPTION_INDEX_PRESENT) {
+    buf.writeUInt32BE(box.defaultSampleDescriptionIndex, ptr)
+    ptr += 4
+  }
+  if (flags & TFHD_FLAGS_DEFAULT_SAMPLE_DURATION_PRESENT) {
+    buf.writeUInt32BE(box.defaultSampleDuration, ptr)
+    ptr += 4
+  }
+  if (flags & TFHD_FLAGS_DEFAULT_SAMPLE_SIZE_PRESENT) {
+    buf.writeInt32BE(box.defaultSampleSize, ptr)
+    ptr += 4
+  }
+  if (flags & TFHD_FLAGS_DEFAULT_SAMPLE_FLAGS_PRESENT) {
+    buf.writeUInt32BE(box.defaultSampleFlags, ptr)
+    ptr += 4
+  }
+
+  exports.tfhd.encode.bytes = size
   return buf
 }
-exports.tfhd.decode = function (buf, offset) {
-  // TODO: this
+exports.tfhd.decode = function (buf, start, _end, headers) {
+
+  var flags = headers.flags
+  var ptr = start
+  var result = {}
+
+  result.trackId = buf.readUInt32BE(ptr)
+  ptr += 4
+
+  if (flags & TFHD_FLAGS_BASE_DATA_OFFSET_PRESENT) {
+    result.baseDataOffsetPresent = uint64be.decode(buf, ptr)
+    ptr += 8
+  }
+  if (flags & TFHD_FLAGS_SAMPLE_DESCRIPTION_INDEX_PRESENT) {
+    result.defaultSampleDescriptionIndex = buf.readUInt32BE(ptr)
+    ptr += 4
+  }
+  if (flags & TFHD_FLAGS_DEFAULT_SAMPLE_DURATION_PRESENT) {
+    result.defaultSampleDuration = buf.readUInt32BE(ptr)
+    ptr += 4
+  }
+  if (flags & TFHD_FLAGS_DEFAULT_SAMPLE_SIZE_PRESENT) {
+    result.defaultSampleSize = buf.readUInt32BE(ptr)
+    ptr += 4
+  }
+  if (flags & TFHD_FLAGS_DEFAULT_SAMPLE_FLAGS_PRESENT) {
+    result.defaultSampleFlags = buf.readUInt32BE(ptr)
+    ptr += 4
+  }
+  return result
 }
+
 exports.tfhd.encodingLength = function (box) {
-  // TODO: this is wrong!
-  return 4
+  var flags = box.flags
+  var size = 4
+
+  if (flags & TFHD_FLAGS_BASE_DATA_OFFSET_PRESENT) {
+    size += 8
+  }
+  if (flags & TFHD_FLAGS_SAMPLE_DESCRIPTION_INDEX_PRESENT) {
+    size += 4
+  }
+  if (flags & TFHD_FLAGS_DEFAULT_SAMPLE_DURATION_PRESENT) {
+    size += 4
+  }
+  if (flags & TFHD_FLAGS_DEFAULT_SAMPLE_SIZE_PRESENT) {
+    size += 4
+  }
+  if (flags & TFHD_FLAGS_DEFAULT_SAMPLE_FLAGS_PRESENT) {
+    size += 4
+  }
+  return size
 }
 
 exports.tfdt = {}
 exports.tfdt.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(4)
+  var version = box.version || 0
 
-  buf.writeUInt32BE(box.baseMediaDecodeTime || 0, 0)
-  exports.tfdt.encode.bytes = 4
+  if (buf) {
+    buf = buf.slice(offset)
+  } else {
+    buf = version === 0 ? bufferAlloc(4) : bufferAlloc(8)
+  }
+
+  if (version === 0) {
+    exports.tfdt.encode.bytes = 4
+    buf.writeUInt32BE(box.baseMediaDecodeTime || 0, 0)
+  } else {
+    exports.tfdt.encode.bytes = 8
+    uint64be.encode(box.baseMediaDecodeTime, buf, 0)
+  }
   return buf
 }
-exports.tfdt.decode = function (buf, offset) {
-  // TODO: this
+exports.tfdt.decode = function (buf, start, _end, headers) {
+  var result = {};
+  if ((headers.version || 0) === 0) {
+    result.baseMediaDecodeTime = buf.readUInt32BE(start)
+  } else {
+    result.baseMediaDecodeTime = uint64be.decode(buf, start)
+  }
+  return result;
 }
 exports.tfdt.encodingLength = function (box) {
-  return 4
+  if ((box.version || 0) === 0) {
+    return 4
+  } else {
+    return 8
+  }
 }
+
+
+var TRUN_FLAGS_DATA_OFFSET_PRESENT                     = 0x00001
+var TRUN_FLAGS_FIRST_SAMPLE_FLAGS_PRESENT              = 0x00004
+var TRUN_FLAGS_SAMPLE_DURATION_PRESENT                 = 0x00100
+var TRUN_FLAGS_SAMPLE_SIZE_PRESENT                     = 0x00200
+var TRUN_FLAGS_SAMPLE_FLAGS_PRESENT                    = 0x00400
+var TRUN_FLAGS_SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT = 0x00800
 
 exports.trun = {}
 exports.trun.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(8 + box.entries.length * 16)
+  var size = exports.trun.encodingLength(box)
+  buf = buf ? buf.slice(offset) : bufferAlloc(size)
+  var ptr = 0
+  var flags = box.flags
 
-  // TODO: this is wrong
-  buf.writeUInt32BE(box.entries.length, 0)
-  buf.writeInt32BE(box.dataOffset, 4)
-  var ptr = 8
-  for (var i = 0; i < box.entries.length; i++) {
-    var entry = box.entries[i]
-    buf.writeUInt32BE(entry.sampleDuration, ptr)
-    ptr += 4
+  buf.writeUInt32BE(box.entries.length, ptr)
+  ptr += 4
 
-    buf.writeUInt32BE(entry.sampleSize, ptr)
-    ptr += 4
-
-    buf.writeUInt32BE(entry.sampleFlags, ptr)
-    ptr += 4
-
-    if ((box.version || 0) === 0) {
-      buf.writeUInt32BE(entry.sampleCompositionTimeOffset, ptr)
-    } else {
-      buf.writeInt32BE(entry.sampleCompositionTimeOffset, ptr)
-    }
+  if (flags & TRUN_FLAGS_DATA_OFFSET_PRESENT) {
+    buf.writeInt32BE(box.dataOffset, ptr)
     ptr += 4
   }
-  exports.trun.encode.bytes = ptr
+
+  if (flags & TRUN_FLAGS_FIRST_SAMPLE_FLAGS_PRESENT) {
+    buf.writeUInt32BE(box.firstSampleFlags, ptr)
+    ptr += 4
+  }
+
+  for (var idx = 0; idx < box.entries.length; idx++) {
+    var entry = box.entries[idx]
+
+    if (flags & TRUN_FLAGS_SAMPLE_DURATION_PRESENT) {
+      buf.writeUInt32BE(entry.sampleDuration, ptr)
+      ptr += 4  
+    }
+
+    if (flags & TRUN_FLAGS_SAMPLE_SIZE_PRESENT) {
+      buf.writeUInt32BE(entry.sampleSize, ptr)
+      ptr += 4
+    }
+
+    if (flags & TRUN_FLAGS_SAMPLE_FLAGS_PRESENT) {
+      buf.writeUInt32BE(entry.sampleFlags, ptr)
+      ptr += 4
+    }
+
+    if (flags & TRUN_FLAGS_SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT) {
+      if ((box.version || 0) === 0) {
+        buf.writeUInt32BE(entry.sampleCompositionTimeOffset, ptr)
+      } else {
+        buf.writeInt32BE(entry.sampleCompositionTimeOffset, ptr)
+      }
+      ptr += 4  
+    }
+  }
+  exports.trun.encode.bytes = size
 }
-exports.trun.decode = function (buf, offset) {
-  // TODO: this
+exports.trun.decode = function (buf, start, _end, headers) {
+  var flags = headers.flags
+  var ptr = start
+
+  var result = { entries: [] }
+
+  var entriesLength = buf.readUInt32BE(ptr)
+  ptr += 4
+  if (flags & TRUN_FLAGS_DATA_OFFSET_PRESENT) {
+    result.dataOffset = buf.readInt32BE(ptr)
+    ptr += 4
+  }
+
+  if (flags & TRUN_FLAGS_FIRST_SAMPLE_FLAGS_PRESENT) {
+    result.firstSampleFlags = buf.readUInt32BE(ptr)
+    ptr += 4
+  }
+
+  for (var idx = 0; idx < entriesLength; idx++) {
+    var entry = {}
+    if (flags & TRUN_FLAGS_SAMPLE_DURATION_PRESENT) {
+      entry.sampleDuration = buf.readUInt32BE(ptr)
+      ptr += 4  
+    }
+
+    if (flags & TRUN_FLAGS_SAMPLE_SIZE_PRESENT) {
+      entry.sampleSize = buf.readUInt32BE(ptr)
+      ptr += 4
+    }
+
+    if (flags & TRUN_FLAGS_SAMPLE_FLAGS_PRESENT) {
+      entry.sampleFlags = buf.readUInt32BE(ptr)
+      ptr += 4
+    }
+
+    if (flags & TRUN_FLAGS_SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT) {
+      if ((headers.version || 0) === 0) {
+        entry.sampleCompositionTimeOffset = buf.readUInt32BE(ptr)
+      } else {
+        entry.sampleCompositionTimeOffset = buf.writeInt32BE(ptr)
+      }
+      ptr += 4  
+    }
+
+    result.entries.push(entry)
+  }
+
+  return result
 }
 exports.trun.encodingLength = function (box) {
-  // TODO: this is wrong
-  return 8 + box.entries.length * 16
+  var flags = box.flags
+
+  var size = 4 // 4 bytes for sample count (mandatory first field)
+  if (flags & TRUN_FLAGS_DATA_OFFSET_PRESENT) {
+    size += 4
+  }
+  if (flags & TRUN_FLAGS_FIRST_SAMPLE_FLAGS_PRESENT) {
+    size += 4
+  }
+
+  var entrySize = 0;
+  if (flags & TRUN_FLAGS_SAMPLE_DURATION_PRESENT) {
+    entrySize += 4
+  }
+  if (flags & TRUN_FLAGS_SAMPLE_SIZE_PRESENT) {
+    entrySize += 4
+  }
+  if (flags & TRUN_FLAGS_SAMPLE_FLAGS_PRESENT) {
+    entrySize += 4
+  }
+  if (flags & TRUN_FLAGS_SAMPLE_COMPOSITION_TIME_OFFSETS_PRESENT) {
+    entrySize += 4
+  }
+
+
+  size += entrySize * box.entries.length
+  return size
 }
 
 exports.mdat = {}

@@ -168,7 +168,7 @@ Box.decodeWithoutHeaders = function (headers, buffer, start, end) {
     }
   } else if (boxes[type]) {
     var decode = boxes[type].decode
-    obj = decode(buffer, start, end)
+    obj = decode(buffer, start, end, headers)
   } else {
     obj.buffer = bufferFrom(buffer.slice(start, end))
   }
