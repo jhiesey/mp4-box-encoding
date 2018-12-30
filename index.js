@@ -14,7 +14,7 @@ var Box = exports
  * Five-character names ending in 's' indicate arrays instead of single elements.
  */
 var containers = exports.containers = {
-  'moov': ['mvhd', 'meta', 'traks', 'mvex'],
+  'moov': ['mvhd', 'meta', 'traks', 'mvex', 'udta'],
   'trak': ['tkhd', 'tref', 'trgr', 'edts', 'meta', 'mdia', 'udta'],
   'edts': ['elst'],
   'mdia': ['mdhd', 'hdlr', 'elng', 'minf'],
@@ -168,7 +168,7 @@ Box.decodeWithoutHeaders = function (headers, buffer, start, end) {
     }
   } else if (boxes[type]) {
     var decode = boxes[type].decode
-    obj = decode(buffer, start, end)
+    obj = decode(buffer, start, end, headers)
   } else {
     obj.buffer = bufferFrom(buffer.slice(start, end))
   }
