@@ -1,8 +1,6 @@
 // This is an intentionally recursive require. I don't like it either.
 var Box = require('./index')
 var Descriptor = require('./descriptor')
-var bufferAlloc = require('buffer-alloc')
-var bufferFrom = require('buffer-from')
 var uint64be = require('uint64be')
 
 var TIME_OFFSET = 2082844800000
@@ -46,7 +44,7 @@ fullBoxes.forEach(function (type) {
 
 exports.ftyp = {}
 exports.ftyp.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.ftyp.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.ftyp.encodingLength(box))
   var brands = box.compatibleBrands || []
   buf.write(box.brand, 0, 4, 'ascii')
   buf.writeUInt32BE(box.brandVersion, 4)
@@ -72,7 +70,7 @@ exports.ftyp.encodingLength = function (box) {
 
 exports.mvhd = {}
 exports.mvhd.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(96)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(96)
   writeDate(box.ctime || new Date(), buf, 0)
   writeDate(box.mtime || new Date(), buf, 4)
   buf.writeUInt32BE(box.timeScale || 0, 8)
@@ -116,7 +114,7 @@ exports.mvhd.encodingLength = function (box) {
 
 exports.tkhd = {}
 exports.tkhd.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(80)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(80)
   writeDate(box.ctime || new Date(), buf, 0)
   writeDate(box.mtime || new Date(), buf, 4)
   buf.writeUInt32BE(box.trackId || 0, 8)
@@ -154,7 +152,7 @@ exports.tkhd.encodingLength = function (box) {
 exports.mdhd = {}
 exports.mdhd.encode = function (box, buf, offset) {
   if (box.version === 1) {
-    buf = buf ? buf.slice(offset) : bufferAlloc(32)
+    buf = buf ? buf.slice(offset) : Buffer.alloc(32)
     writeDate64(box.ctime || new Date(), buf, 0)
     writeDate64(box.mtime || new Date(), buf, 8)
     buf.writeUInt32BE(box.timeScale || 0, 16)
@@ -166,7 +164,7 @@ exports.mdhd.encode = function (box, buf, offset) {
     return buf
   }
 
-  buf = buf ? buf.slice(offset) : bufferAlloc(20)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(20)
   writeDate(box.ctime || new Date(), buf, 0)
   writeDate(box.mtime || new Date(), buf, 4)
   buf.writeUInt32BE(box.timeScale || 0, 8)
@@ -212,7 +210,7 @@ exports.mdhd.encodingLength = function (box) {
 
 exports.vmhd = {}
 exports.vmhd.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(8)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(8)
   buf.writeUInt16BE(box.graphicsMode || 0, 0)
   var opcolor = box.opcolor || [0, 0, 0]
   buf.writeUInt16BE(opcolor[0], 2)
@@ -234,7 +232,7 @@ exports.vmhd.encodingLength = function (box) {
 
 exports.smhd = {}
 exports.smhd.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(4)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(4)
   buf.writeUInt16BE(box.balance || 0, 0)
   writeReserved(buf, 2, 4)
   exports.smhd.encode.bytes = 4
@@ -252,7 +250,7 @@ exports.smhd.encodingLength = function (box) {
 
 exports.stsd = {}
 exports.stsd.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.stsd.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.stsd.encodingLength(box))
   var entries = box.entries || []
 
   buf.writeUInt32BE(entries.length, 0)
@@ -294,7 +292,7 @@ exports.stsd.encodingLength = function (box) {
 
 exports.avc1 = exports.VisualSampleEntry = {}
 exports.VisualSampleEntry.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.VisualSampleEntry.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.VisualSampleEntry.encodingLength(box))
 
   writeReserved(buf, 0, 6)
   buf.writeUInt16BE(box.dataReferenceIndex || 0, 6)
@@ -357,7 +355,7 @@ exports.VisualSampleEntry.encodingLength = function (box) {
 
 exports.avcC = {}
 exports.avcC.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(box.buffer.length)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(box.buffer.length)
 
   box.buffer.copy(buf)
   exports.avcC.encode.bytes = box.buffer.length
@@ -367,7 +365,7 @@ exports.avcC.decode = function (buf, offset, end) {
 
   return {
     mimeCodec: buf.toString('hex', 1, 4),
-    buffer: bufferFrom(buf)
+    buffer: Buffer.from(buf)
   }
 }
 exports.avcC.encodingLength = function (box) {
@@ -376,7 +374,7 @@ exports.avcC.encodingLength = function (box) {
 
 exports.mp4a = exports.AudioSampleEntry = {}
 exports.AudioSampleEntry.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.AudioSampleEntry.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.AudioSampleEntry.encodingLength(box))
 
   writeReserved(buf, 0, 6)
   buf.writeUInt16BE(box.dataReferenceIndex || 0, 6)
@@ -426,7 +424,7 @@ exports.AudioSampleEntry.encodingLength = function (box) {
 
 exports.esds = {}
 exports.esds.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(box.buffer.length)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(box.buffer.length)
 
   box.buffer.copy(buf, 0)
   exports.esds.encode.bytes = box.buffer.length
@@ -451,7 +449,7 @@ exports.esds.decode = function (buf, offset, end) {
 
   return {
     mimeCodec: mimeCodec,
-    buffer: bufferFrom(buf.slice(0))
+    buffer: Buffer.from(buf.slice(0))
   }
 }
 exports.esds.encodingLength = function (box) {
@@ -462,7 +460,7 @@ exports.esds.encodingLength = function (box) {
 exports.stsz = {}
 exports.stsz.encode = function (box, buf, offset) {
   var entries = box.entries || []
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.stsz.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.stsz.encodingLength(box))
 
   buf.writeUInt32BE(0, 0)
   buf.writeUInt32BE(entries.length, 4)
@@ -500,7 +498,7 @@ exports.stss =
 exports.stco = {}
 exports.stco.encode = function (box, buf, offset) {
   var entries = box.entries || []
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.stco.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.stco.encodingLength(box))
 
   buf.writeUInt32BE(entries.length, 0)
 
@@ -531,7 +529,7 @@ exports.stco.encodingLength = function (box) {
 exports.co64 = {}
 exports.co64.encode = function (box, buf, offset) {
   var entries = box.entries || []
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.co64.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.co64.encodingLength(box))
 
   buf.writeUInt32BE(entries.length, 0)
 
@@ -562,7 +560,7 @@ exports.co64.encodingLength = function (box) {
 exports.stts = {}
 exports.stts.encode = function (box, buf, offset) {
   var entries = box.entries || []
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.stts.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.stts.encodingLength(box))
 
   buf.writeUInt32BE(entries.length, 0)
 
@@ -599,7 +597,7 @@ exports.stts.encodingLength = function (box) {
 exports.ctts = {}
 exports.ctts.encode = function (box, buf, offset) {
   var entries = box.entries || []
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.ctts.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.ctts.encodingLength(box))
 
   buf.writeUInt32BE(entries.length, 0)
 
@@ -636,7 +634,7 @@ exports.ctts.encodingLength = function (box) {
 exports.stsc = {}
 exports.stsc.encode = function (box, buf, offset) {
   var entries = box.entries || []
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.stsc.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.stsc.encodingLength(box))
 
   buf.writeUInt32BE(entries.length, 0)
 
@@ -674,7 +672,7 @@ exports.stsc.encodingLength = function (box) {
 
 exports.dref = {}
 exports.dref.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.dref.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.dref.encodingLength(box))
   var entries = box.entries || []
 
   buf.writeUInt32BE(entries.length, 0)
@@ -734,7 +732,7 @@ exports.dref.encodingLength = function (box) {
 exports.elst = {}
 exports.elst.encode = function (box, buf, offset) {
   var entries = box.entries || []
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.elst.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.elst.encodingLength(box))
 
   buf.writeUInt32BE(entries.length, 0)
 
@@ -772,7 +770,7 @@ exports.elst.encodingLength = function (box) {
 
 exports.hdlr = {}
 exports.hdlr.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(exports.hdlr.encodingLength(box))
+  buf = buf ? buf.slice(offset) : Buffer.alloc(exports.hdlr.encodingLength(box))
 
   var len = 21 + (box.name || '').length
   buf.fill(0, 0, len)
@@ -796,7 +794,7 @@ exports.hdlr.encodingLength = function (box) {
 
 exports.mehd = {}
 exports.mehd.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(4)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(4)
 
   buf.writeUInt32BE(box.fragmentDuration || 0, 0)
   exports.mehd.encode.bytes = 4
@@ -814,7 +812,7 @@ exports.mehd.encodingLength = function (box) {
 
 exports.trex = {}
 exports.trex.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(20)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(20)
 
   buf.writeUInt32BE(box.trackId || 0, 0)
   buf.writeUInt32BE(box.defaultSampleDescriptionIndex || 0, 4)
@@ -840,7 +838,7 @@ exports.trex.encodingLength = function (box) {
 
 exports.mfhd = {}
 exports.mfhd.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(4)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(4)
 
   buf.writeUInt32BE(box.sequenceNumber || 0, 0)
   exports.mfhd.encode.bytes = 4
@@ -857,7 +855,7 @@ exports.mfhd.encodingLength = function (box) {
 
 exports.tfhd = {}
 exports.tfhd.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(4)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(4)
   buf.writeUInt32BE(box.trackId, 0)
   exports.tfhd.encode.bytes = 4
   return buf
@@ -872,7 +870,7 @@ exports.tfhd.encodingLength = function (box) {
 
 exports.tfdt = {}
 exports.tfdt.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(4)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(4)
 
   buf.writeUInt32BE(box.baseMediaDecodeTime || 0, 0)
   exports.tfdt.encode.bytes = 4
@@ -887,7 +885,7 @@ exports.tfdt.encodingLength = function (box) {
 
 exports.trun = {}
 exports.trun.encode = function (box, buf, offset) {
-  buf = buf ? buf.slice(offset) : bufferAlloc(8 + box.entries.length * 16)
+  buf = buf ? buf.slice(offset) : Buffer.alloc(8 + box.entries.length * 16)
 
   // TODO: this is wrong
   buf.writeUInt32BE(box.entries.length, 0)
@@ -932,7 +930,7 @@ exports.mdat.encode = function (box, buf, offset) {
 }
 exports.mdat.decode = function (buf, start, end) {
   return {
-    buffer: bufferFrom(buf.slice(start, end))
+    buffer: Buffer.from(buf.slice(start, end))
   }
 }
 exports.mdat.encodingLength = function (box) {
@@ -971,7 +969,7 @@ function writeMatrix (list, buf, offset) {
 }
 
 function writeString (str, buf, offset) {
-  var strBuffer = bufferFrom(str, 'utf8')
+  var strBuffer = Buffer.from(str, 'utf8')
   strBuffer.copy(buf, offset)
   buf[offset + strBuffer.length] = 0
 }
