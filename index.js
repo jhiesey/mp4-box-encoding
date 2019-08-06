@@ -1,7 +1,5 @@
 // var assert = require('assert')
 var uint64be = require('uint64be')
-var bufferAlloc = require('buffer-alloc')
-var bufferFrom = require('buffer-from')
 
 var boxes = require('./boxes')
 
@@ -29,7 +27,7 @@ var containers = exports.containers = {
 Box.encode = function (obj, buffer, offset) {
   Box.encodingLength(obj) // sets every level appropriately
   offset = offset || 0
-  buffer = buffer || bufferAlloc(obj.length)
+  buffer = buffer || Buffer.alloc(obj.length)
   return Box._encode(obj, buffer, offset)
 }
 
@@ -170,7 +168,7 @@ Box.decodeWithoutHeaders = function (headers, buffer, start, end) {
     var decode = boxes[type].decode
     obj = decode(buffer, start, end)
   } else {
-    obj.buffer = bufferFrom(buffer.slice(start, end))
+    obj.buffer = Buffer.from(buffer.slice(start, end))
   }
 
   obj.length = headers.length
