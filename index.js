@@ -170,7 +170,7 @@ Box.decodeWithoutHeaders = function (headers, buffer, start, end) {
   } else {
     obj.buffer = Buffer.from(buffer.slice(start, end))
   }
-
+  if(obj == undefined) obj = {}
   obj.length = headers.length
   obj.contentLen = headers.contentLen
   obj.type = headers.type
