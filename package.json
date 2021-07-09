@@ -19,10 +19,9 @@
   "author": "John Hiesey",
   "license": "MIT",
   "dependencies": {
-    "uint64be": "^2.0.2"
+    "uint64be": "^3.0.0"
   },
   "devDependencies": {
-    "standard": "^11.0.1",
-    "tape": "^4.9.1"
+    "standard": "^16.0.3"
   }
 }

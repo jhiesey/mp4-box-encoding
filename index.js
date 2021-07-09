@@ -1,45 +1,45 @@
 // var assert = require('assert')
-var uint64be = require('uint64be')
+const uint64be = require('uint64be')
 
-var boxes = require('./boxes')
+const boxes = require('./boxes.js')
 
-var UINT32_MAX = 4294967295
+const UINT32_MAX = 4294967295
 
-var Box = exports
+const Box = exports
 
 /*
  * Lists the proper order for boxes inside containers.
  * Five-character names ending in 's' indicate arrays instead of single elements.
  */
-var containers = exports.containers = {
-  'moov': ['mvhd', 'meta', 'traks', 'mvex'],
-  'trak': ['tkhd', 'tref', 'trgr', 'edts', 'meta', 'mdia', 'udta'],
-  'edts': ['elst'],
-  'mdia': ['mdhd', 'hdlr', 'elng', 'minf'],
-  'minf': ['vmhd', 'smhd', 'hmhd', 'sthd', 'nmhd', 'dinf', 'stbl'],
-  'dinf': ['dref'],
-  'stbl': ['stsd', 'stts', 'ctts', 'cslg', 'stsc', 'stsz', 'stz2', 'stco', 'co64', 'stss', 'stsh', 'padb', 'stdp', 'sdtp', 'sbgps', 'sgpds', 'subss', 'saizs', 'saios'],
-  'mvex': ['mehd', 'trexs', 'leva'],
-  'moof': ['mfhd', 'meta', 'trafs'],
-  'traf': ['tfhd', 'tfdt', 'trun', 'sbgps', 'sgpds', 'subss', 'saizs', 'saios', 'meta']
+const containers = exports.containers = {
+  moov: ['mvhd', 'meta', 'traks', 'mvex'],
+  trak: ['tkhd', 'tref', 'trgr', 'edts', 'meta', 'mdia', 'udta'],
+  edts: ['elst'],
+  mdia: ['mdhd', 'hdlr', 'elng', 'minf'],
+  minf: ['vmhd', 'smhd', 'hmhd', 'sthd', 'nmhd', 'dinf', 'stbl'],
+  dinf: ['dref'],
+  stbl: ['stsd', 'stts', 'ctts', 'cslg', 'stsc', 'stsz', 'stz2', 'stco', 'co64', 'stss', 'stsh', 'padb', 'stdp', 'sdtp', 'sbgps', 'sgpds', 'subss', 'saizs', 'saios'],
+  mvex: ['mehd', 'trexs', 'leva'],
+  moof: ['mfhd', 'meta', 'trafs'],
+  traf: ['tfhd', 'tfdt', 'trun', 'sbgps', 'sgpds', 'subss', 'saizs', 'saios', 'meta']
 }
 
-Box.encode = function (obj, buffer, offset) {
+Box.encode = (obj, buffer, offset) => {
   Box.encodingLength(obj) // sets every level appropriately
   offset = offset || 0
   buffer = buffer || Buffer.alloc(obj.length)
   return Box._encode(obj, buffer, offset)
 }
 
-Box._encode = function (obj, buffer, offset) {
-  var type = obj.type
-  var len = obj.length
+Box._encode = (obj, buffer, offset) => {
+  const type = obj.type
+  let len = obj.length
   if (len > UINT32_MAX) {
     len = 1
   }
   buffer.writeUInt32BE(len, offset)
   buffer.write(obj.type, offset + 4, 4, 'ascii')
-  var ptr = offset + 8
+  let ptr = offset + 8
   if (len === 1) {
     uint64be.encode(obj.length, buffer, ptr)
     ptr += 8
@@ -51,12 +51,12 @@ Box._encode = function (obj, buffer, offset) {
   }
 
   if (containers[type]) {
-    var contents = containers[type]
-    contents.forEach(function (childType) {
+    const contents = containers[type]
+    contents.forEach(childType => {
       if (childType.length === 5) {
-        var entry = obj[childType] || []
+        const entry = obj[childType] || []
         childType = childType.substr(0, 4)
-        entry.forEach(function (child) {
+        entry.forEach(child => {
           Box._encode(child, buffer, ptr)
           ptr += Box.encode.bytes
         })
@@ -66,21 +66,20 @@ Box._encode = function (obj, buffer, offset) {
       }
     })
     if (obj.otherBoxes) {
-      obj.otherBoxes.forEach(function (child) {
+      obj.otherBoxes.forEach(child => {
         Box._encode(child, buffer, ptr)
         ptr += Box.encode.bytes
       })
     }
   } else if (boxes[type]) {
-    var encode = boxes[type].encode
+    const encode = boxes[type].encode
     encode(obj, buffer, ptr)
     ptr += encode.bytes
   } else if (obj.buffer) {
-    var buf = obj.buffer
-    buf.copy(buffer, ptr)
+    obj.buffer.copy(buffer, ptr)
     ptr += obj.buffer.length
   } else {
-    throw new Error('Either `type` must be set to a known type (not\'' + type + '\') or `buffer` must be set')
+    throw new Error(`Either "type" must be set to a known type (not"${type}") or "buffer" must be set`)
   }
 
   Box.encode.bytes = ptr - offset
@@ -93,28 +92,26 @@ Box._encode = function (obj, buffer, offset) {
  * or if there isn't enough data, returns the total
  * number of bytes needed to read the headers
  */
-Box.readHeaders = function (buffer, start, end) {
-  start = start || 0
-  end = end || buffer.length
+Box.readHeaders = (buffer, start = 0, end = buffer.length) => {
   if (end - start < 8) {
     return 8
   }
 
-  var len = buffer.readUInt32BE(start)
-  var type = buffer.toString('ascii', start + 4, start + 8)
-  var ptr = start + 8
+  let length = buffer.readUInt32BE(start)
+  const type = buffer.toString('ascii', start + 4, start + 8)
+  let ptr = start + 8
 
-  if (len === 1) {
+  if (length === 1) {
     if (end - start < 16) {
       return 16
     }
 
-    len = uint64be.decode(buffer, ptr)
+    length = uint64be.decode(buffer, ptr)
     ptr += 8
   }
 
-  var version
-  var flags
+  let version
+  let flags
   if (boxes.fullBoxes[type]) {
     version = buffer.readUInt8(ptr)
     flags = buffer.readUInt32BE(ptr) & 0xffffff
@@ -122,19 +119,17 @@ Box.readHeaders = function (buffer, start, end) {
   }
 
   return {
-    length: len,
+    length,
     headersLen: ptr - start,
-    contentLen: len - (ptr - start),
-    type: type,
-    version: version,
-    flags: flags
+    contentLen: length - (ptr - start),
+    type,
+    version,
+    flags
   }
 }
 
-Box.decode = function (buffer, start, end) {
-  start = start || 0
-  end = end || buffer.length
-  var headers = Box.readHeaders(buffer, start, end)
+Box.decode = (buffer, start = 0, end = buffer.length) => {
+  const headers = Box.readHeaders(buffer, start, end)
   if (!headers || headers.length > end - start) {
     throw new Error('Data too short')
   }
@@ -142,35 +137,32 @@ Box.decode = function (buffer, start, end) {
   return Box.decodeWithoutHeaders(headers, buffer, start + headers.headersLen, start + headers.length)
 }
 
-Box.decodeWithoutHeaders = function (headers, buffer, start, end) {
-  start = start || 0
-  end = end || buffer.length
-  var type = headers.type
-  var obj = {}
+Box.decodeWithoutHeaders = (headers, buffer, start = 0, end = buffer.length) => {
+  const type = headers.type
+  let obj = {}
   if (containers[type]) {
     obj.otherBoxes = []
-    var contents = containers[type]
-    var ptr = start
+    const contents = containers[type]
+    let ptr = start
     while (end - ptr >= 8) {
-      var child = Box.decode(buffer, ptr, end)
+      const child = Box.decode(buffer, ptr, end)
       ptr += child.length
-      if (contents.indexOf(child.type) >= 0) {
+      if (contents.includes(child.type)) {
         obj[child.type] = child
-      } else if (contents.indexOf(child.type + 's') >= 0) {
-        var childType = child.type + 's'
-        var entry = obj[childType] = obj[childType] || []
+      } else if (contents.includes(child.type + 's')) {
+        const childType = child.type + 's'
+        const entry = obj[childType] = obj[childType] || []
         entry.push(child)
       } else {
         obj.otherBoxes.push(child)
       }
     }
   } else if (boxes[type]) {
-    var decode = boxes[type].decode
+    const decode = boxes[type].decode
     obj = decode(buffer, start, end)
   } else {
     obj.buffer = Buffer.from(buffer.slice(start, end))
   }
-
   obj.length = headers.length
   obj.contentLen = headers.contentLen
   obj.type = headers.type
@@ -179,32 +171,32 @@ Box.decodeWithoutHeaders = function (headers, buffer, start, end) {
   return obj
 }
 
-Box.encodingLength = function (obj) {
-  var type = obj.type
+Box.encodingLength = obj => {
+  const type = obj.type
 
-  var len = 8
+  let len = 8
   if (boxes.fullBoxes[type]) {
     len += 4
   }
 
   if (containers[type]) {
-    var contents = containers[type]
-    contents.forEach(function (childType) {
+    const contents = containers[type]
+    contents.forEach(childType => {
       if (childType.length === 5) {
-        var entry = obj[childType] || []
+        const entry = obj[childType] || []
         childType = childType.substr(0, 4)
-        entry.forEach(function (child) {
+        entry.forEach(child => {
           child.type = childType
           len += Box.encodingLength(child)
         })
       } else if (obj[childType]) {
-        var child = obj[childType]
+        const child = obj[childType]
         child.type = childType
         len += Box.encodingLength(child)
       }
     })
     if (obj.otherBoxes) {
-      obj.otherBoxes.forEach(function (child) {
+      obj.otherBoxes.forEach(child => {
         len += Box.encodingLength(child)
       })
     }
@@ -213,7 +205,7 @@ Box.encodingLength = function (obj) {
   } else if (obj.buffer) {
     len += obj.buffer.length
   } else {
-    throw new Error('Either `type` must be set to a known type (not\'' + type + '\') or `buffer` must be set')
+    throw new Error(`Either "type" must be set to a known type (not"${type}") or "buffer" must be set`)
   }
 
   if (len > UINT32_MAX) {
